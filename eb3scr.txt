@@ -1,0 +1,208 @@
+getgenv().Resolution = 0.65
+
+local Settings = {
+    MainColor = Color3.fromRGB(180, 0, 255),
+    Colors = {Color3.fromRGB(180, 0, 255), Color3.fromRGB(0, 255, 255), Color3.fromRGB(255, 0, 100), Color3.fromRGB(255, 255, 255)},
+    CurrentColorIdx = 1,
+    AimKey = Enum.KeyCode.E,
+    AimMouseButton = nil,
+    MenuKey = Enum.KeyCode.Insert,
+    TeamCheck = false,
+    Autofire = true,
+    AimbotEnabled = true,
+    AimbotFOV = 150,
+    SpeedHack = false,
+    MenuOpen = true
+}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local function applyOutline(obj)
+    obj.TextStrokeTransparency = 0
+    obj.TextStrokeColor3 = Color3.new(0, 0, 0)
+end
+
+local CC = Instance.new("ColorCorrectionEffect", Lighting)
+CC.Saturation = 0.4
+CC.TintColor = Settings.MainColor
+
+RunService.RenderStepped:Connect(function()
+    Camera.CFrame = Camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution, 0, 0, 0, 1)
+end)
+
+local InfoGui = Instance.new("ScreenGui", CoreGui)
+local InfoLabel = Instance.new("TextLabel", InfoGui)
+InfoLabel.Size = UDim2.new(0, 250, 0, 50); InfoLabel.Position = UDim2.new(0, 10, 0, 10)
+InfoLabel.BackgroundTransparency = 1; InfoLabel.Font = Enum.Font.RobotoMono; InfoLabel.TextSize = 16; InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+applyOutline(InfoLabel)
+
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1.5; FOVCircle.Visible = true; FOVCircle.Filled = false
+
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 420, 0, 380); MainFrame.Position = UDim2.new(0.5, -210, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MainFrame.BorderSizePixel = 2; MainFrame.Active = true; MainFrame.Draggable = true
+MainFrame.Visible = Settings.MenuOpen
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 40); Title.Text = "ABDUL EXPLOIT"; Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.SourceSansBold; Title.TextSize = 20; applyOutline(Title)
+
+local Sections = {}
+local function createSection(name, x)
+    local l = Instance.new("TextLabel", MainFrame)
+    l.Size = UDim2.new(0, 130, 0, 30); l.Position = UDim2.new(0, x, 0, 45)
+    l.BackgroundTransparency = 1; l.Text = "["..string.upper(name).."]"
+    l.Font = Enum.Font.SourceSansBold; l.TextSize = 15; applyOutline(l)
+    table.insert(Sections, l)
+    return l
+end
+
+createSection("Combat", 10); createSection("Visuals", 145); createSection("Misc", 280)
+
+local function createBtn(text, x, y, callback)
+    local b = Instance.new("TextButton", MainFrame)
+    b.Size = UDim2.new(0, 125, 0, 32); b.Position = UDim2.new(0, x, 0, y)
+    b.BackgroundColor3 = Color3.fromRGB(25, 25, 25); b.Text = text; b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.SourceSansBold; b.TextSize = 14; applyOutline(b)
+    b.MouseButton1Click:Connect(callback)
+    return b
+end
+
+local aimT = createBtn("Aimbot: ON", 10, 80, function() Settings.AimbotEnabled = not Settings.AimbotEnabled end)
+local autoT = createBtn("Trigger: ON", 10, 120, function() Settings.Autofire = not Settings.Autofire end)
+local teamT = createBtn("TeamCheck: OFF", 10, 160, function() Settings.TeamCheck = not Settings.TeamCheck end)
+
+local BindContainer = Instance.new("Frame", MainFrame)
+BindContainer.Size = UDim2.new(0, 125, 0, 125); BindContainer.Position = UDim2.new(0, 10, 0, 240); BindContainer.Visible = false; BindContainer.BackgroundColor3 = Color3.fromRGB(20,20,20); BindContainer.ZIndex = 10
+
+local bLab = Instance.new("TextLabel", MainFrame)
+bLab.Size = UDim2.new(0, 125, 0, 20); bLab.Position = UDim2.new(0, 10, 0, 200); bLab.TextColor3 = Color3.new(1,1,1); bLab.BackgroundTransparency = 1; applyOutline(bLab)
+
+createBtn("Select Bind", 10, 220, function() BindContainer.Visible = not BindContainer.Visible end)
+
+local binds = {{"E", Enum.KeyCode.E}, {"Q", Enum.KeyCode.Q}, {"LKM", Enum.UserInputType.MouseButton1}, {"PKM", Enum.UserInputType.MouseButton2}, {"SHIFT", Enum.KeyCode.LeftShift}}
+for i, v in pairs(binds) do
+    local b = Instance.new("TextButton", BindContainer)
+    b.Size = UDim2.new(1, 0, 0, 25); b.Position = UDim2.new(0, 0, 0, (i-1)*25); b.Text = v[1]; b.ZIndex = 11; b.BackgroundColor3 = Color3.fromRGB(30,30,30); b.TextColor3 = Color3.new(1,1,1); applyOutline(b)
+    b.MouseButton1Click:Connect(function()
+        if v[2].EnumType == Enum.KeyCode then Settings.AimKey = v[2] Settings.AimMouseButton = nil else Settings.AimMouseButton = v[2] Settings.AimKey = nil end
+        BindContainer.Visible = false
+    end)
+end
+
+createBtn("Theme Cycle", 145, 80, function() Settings.CurrentColorIdx = Settings.CurrentColorIdx % #Settings.Colors + 1 Settings.MainColor = Settings.Colors[Settings.CurrentColorIdx] CC.TintColor = Settings.MainColor end)
+createBtn("FOV +50", 145, 120, function() Settings.AimbotFOV = Settings.AimbotFOV + 50 end)
+createBtn("FOV -50", 145, 160, function() Settings.AimbotFOV = Settings.AimbotFOV - 50 end)
+
+local speedT = createBtn("Speed: OFF", 280, 80, function() Settings.SpeedHack = not Settings.SpeedHack end)
+createBtn("Stretch +", 280, 120, function() getgenv().Resolution = getgenv().Resolution + 0.05 end)
+createBtn("Stretch -", 280, 160, function() getgenv().Resolution = getgenv().Resolution - 0.05 end)
+
+local function isKeyDown()
+    if Settings.AimMouseButton then return UserInputService:IsMouseButtonPressed(Settings.AimMouseButton) end
+    if Settings.AimKey then return UserInputService:IsKeyDown(Settings.AimKey) end
+    return false
+end
+
+local function getTriggerTarget()
+    local ray = Camera:ViewportPointToRay(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    local params = RaycastParams.new()
+    params.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    local res = workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+    if res and res.Instance then
+        local m = res.Instance:FindFirstAncestorOfClass("Model")
+        local p = Players:GetPlayerFromCharacter(m)
+        if p and p ~= LocalPlayer and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
+            if not Settings.TeamCheck or p.Team ~= LocalPlayer.Team then return true end
+        end
+    end
+    return false
+end
+
+local function createESP(p)
+    if p == LocalPlayer then return end
+    local g = Instance.new("ScreenGui", CoreGui); g.IgnoreGuiInset = true
+    local boxes = {}; for i=1,8 do boxes[i] = Instance.new("Frame", g); boxes[i].BorderSizePixel = 0 end
+    local name = Instance.new("TextLabel", g); name.BackgroundTransparency = 1; name.Font = Enum.Font.SourceSansBold; name.TextSize = 14; applyOutline(name)
+    local tHUD = Instance.new("Frame", g); tHUD.Size = UDim2.new(0,30,0,30); tHUD.BackgroundTransparency = 1; tHUD.AnchorPoint = Vector2.new(0.5,0.5)
+    local tL = {}; for i=1,4 do tL[i] = Instance.new("Frame", tHUD); tL[i].BorderSizePixel = 0 end
+
+    RunService.RenderStepped:Connect(function()
+        local c = p.Character; local hrp = c and c:FindFirstChild("HumanoidRootPart")
+        if hrp and c:FindFirstChild("Humanoid") and c.Humanoid.Health > 0 and (not Settings.TeamCheck or p.Team ~= LocalPlayer.Team) then
+            local pos, onS = Camera:WorldToViewportPoint(hrp.Position)
+            if onS then
+                g.Enabled = true
+                local head = c:FindFirstChild("Head")
+                if not head then return end
+                local h = math.abs(Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.8,0)).Y - Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,3,0)).Y)
+                local w = h * 0.6; local x, y, l = pos.X - w/2, pos.Y - h/2, w * 0.25
+                for i=1,8 do boxes[i].BackgroundColor3 = Settings.MainColor end
+                boxes[1].Position = UDim2.new(0,x,0,y); boxes[1].Size = UDim2.new(0,l,0,2)
+                boxes[2].Position = UDim2.new(0,x,0,y); boxes[2].Size = UDim2.new(0,2,0,l)
+                boxes[3].Position = UDim2.new(0,x+w-l,0,y); boxes[3].Size = UDim2.new(0,l,0,2)
+                boxes[4].Position = UDim2.new(0,x+w-2,0,y); boxes[4].Size = UDim2.new(0,2,0,l)
+                boxes[5].Position = UDim2.new(0,x,0,y+h); boxes[5].Size = UDim2.new(0,l,0,2)
+                boxes[6].Position = UDim2.new(0,x,0,y+h-l); boxes[6].Size = UDim2.new(0,2,0,l)
+                boxes[7].Position = UDim2.new(0,x+w-l,0,y+h); boxes[7].Size = UDim2.new(0,l,0,2)
+                boxes[8].Position = UDim2.new(0,x+w-2,0,y+h-l); boxes[8].Size = UDim2.new(0,2,0,l)
+                name.Visible = true; name.Text = p.Name; name.TextColor3 = Settings.MainColor; name.Position = UDim2.new(0,x+w/2-100,0,y-20); name.Size = UDim2.new(0,200,0,20)
+                
+                if getgenv().curT == p and isKeyDown() then
+                    tHUD.Visible = true; tHUD.Position = UDim2.new(0,pos.X,0,pos.Y); tHUD.Rotation = (tick()*400)%360
+                    for i=1,4 do tL[i].BackgroundColor3 = Settings.MainColor; tL[i].Size = UDim2.new(0,8,0,2) end
+                    tL[1].Position = UDim2.new(0,0,0,0); tL[2].Position = UDim2.new(1,-8,0,0); tL[3].Position = UDim2.new(0,0,1,-2); tL[4].Position = UDim2.new(1,-8,1,-2)
+                else tHUD.Visible = false end
+            else g.Enabled = false end
+        else g.Enabled = false end
+    end)
+end
+
+Players.PlayerAdded:Connect(createESP); for _, p in pairs(Players:GetPlayers()) do createESP(p) end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        aimT.Text = "Aimbot: "..(Settings.AimbotEnabled and "ON" or "OFF")
+        autoT.Text = "Trigger: "..(Settings.Autofire and "ON" or "OFF")
+        speedT.Text = "Speed: "..(Settings.SpeedHack and "ON" or "OFF")
+        bLab.Text = "Bind: "..(Settings.AimMouseButton and Settings.AimMouseButton.Name or (Settings.AimKey and Settings.AimKey.Name or "None"))
+        MainFrame.BorderColor3 = Settings.MainColor; Title.BackgroundColor3 = Settings.MainColor
+        InfoLabel.TextColor3 = Settings.MainColor; FOVCircle.Color = Settings.MainColor
+        for _, s in pairs(Sections) do s.TextColor3 = Settings.MainColor end
+        if Settings.SpeedHack and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 35 end
+        InfoLabel.Text = "3vWare Beta By @eb3xploit*\nFPS: "..math.floor(1/RunService.RenderStepped:Wait())
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Radius = Settings.AimbotFOV
+    local target = nil; local maxD = math.huge; local mP = UserInputService:GetMouseLocation()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+            if not Settings.TeamCheck or p.Team ~= LocalPlayer.Team then
+                local sP, onS = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                if onS then
+                    local d = (Vector2.new(sP.X, sP.Y) - mP).Magnitude
+                    if d <= Settings.AimbotFOV and d < maxD then maxD = d; target = p end
+                end
+            end
+        end
+    end
+    if target and Settings.AimbotEnabled and isKeyDown() then
+        getgenv().curT = target
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
+    else getgenv().curT = nil end
+    if Settings.Autofire then if getTriggerTarget() then mouse1press() else mouse1release() end end
+end)
+
+UserInputService.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Settings.MenuKey then MainFrame.Visible = not MainFrame.Visible end end)
